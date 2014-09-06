@@ -10,7 +10,7 @@ How it works
 
 Written using WebGL, it requires an Rdio account to use. Does not currently work on a desktop browser. Tested only with a Nexus 4.
 
-Be aware that you are required to click a "It's okay to play music" button when the page loads every time (so don't hold the cardboard to your face till you do).  This is a Chrome thing, not an Rdio thing-- it's still being activitly debated, (track the issue in Chromium)[https://code.google.com/p/chromium/issues/detail?id=178297]
+Be aware that you are required to click a "It's okay to play music" button when the page loads every time (so don't hold the cardboard to your face till you do).  This is a Chrome thing, not an Rdio thing-- it's still being activitly debated, [track the issue in Chromium](https://code.google.com/p/chromium/issues/detail?id=178297)
 
 If you focus on an album cube it'll grow in size and after a second it'll start playing a random track from the album, and start somewhere between 0% and 66% of the way through the track.
 
