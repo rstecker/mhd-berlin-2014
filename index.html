@@ -32,7 +32,7 @@
   <script src="js/third-party/threejs/three.min.js"></script>
   <script src="js/third-party/threejs/StereoEffect.js"></script>
   <script src="js/third-party/threejs/DeviceOrientationControls.js"></script>
-  <!--<script src="js/third-party/threejs/OrbitControls.js"></script>-->
+  <script src="js/third-party/threejs/OrbitControls.js"></script>
   <script src="js/third-party/threejs/FirstPersonControls.js"></script>
   <!--<script src="js/third-party/threejs/TextGeometry.js"></script>-->
   <script src="js/third-party/underscore-min.js"></script>
@@ -45,7 +45,7 @@
     var lastTime = 0;
     var line;
     var debugFunc;
-    var throttled_findLookingTarget = _.throttle(findLookingTarget, 500); 
+    var throttled_findLookingTarget = _.throttle(findLookingTarget, 800); 
 
     var camera, scene, renderer;
     var effect, controls;
@@ -71,7 +71,8 @@
       camera.position.set(0, 0, 0);
       scene.add(camera);
 
-      controls = new THREE.FirstPersonControls(camera, element);//OrbitControls(camera, element);
+      controls = new THREE.FirstPersonControls(camera, element);
+      // controls = new THREE.OrbitControls(camera, element);
       // controls.rotateUp(Math.PI / 4);
       controls.target.set(
         camera.position.x,// + 0.1,
