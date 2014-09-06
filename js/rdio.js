@@ -5,6 +5,8 @@ var intersectObj = null;
 var now_playing_block = null;
 var track_progression = -1;
 var now_playing_details = null;
+var absolute_index = 0;
+var prev_index = null;
 
 var RATE_SCALE = 0.01;
 var MAX_SCALE = 1.5;
@@ -37,13 +39,13 @@ function verifyWeWantToPlay(){
     playRdioTrack(prevData);
     now_playing_block.material = new THREE.MeshLambertMaterial({ map: loadImage(prevData.icon) });
   } else {
-    console.log("Track play failed to pass debounce");
+    // console.log("Track play failed to pass debounce");
   }
 }
 var debounced_verifyWeWantToPlay = _.debounce(verifyWeWantToPlay, 1*1000);
 
+// this runs slighlty less frequently
 function findLookingTarget() {
-
   var mouse3D = new THREE.Vector3( ( 0.5 ) * 2 - 1,   //x
                                   -( 0.5 ) * 2 + 1,  //y
                                      0.5 );          //z
@@ -55,13 +57,35 @@ function findLookingTarget() {
   if (intersects.length > 0) {
     intersectObj = intersects[0].object;
     if (intersectObj.rdioData != prevData && intersectObj.rdioData) {
-      console.log(intersectObj.rdioData);
       prevData = intersectObj.rdioData;
       debounced_verifyWeWantToPlay();
     }
   } else {
     intersectObj = null;
   }
+
+  rotation = camera.rotation.y;
+  var pival = rotation * 180 / Math.PI
+  pival = Math.round((pival + 180) * 100)/100.0
+  var part = 360/8;
+  var pindex = Math.round(pival / part) % 8;
+  direction = 'desc';
+  if (prev_index == pindex) {
+    direction = 'holding';
+  } else if ((prev_index < pindex || prev_index > 5 && pindex < 2) && !(prev_index < 2 && pindex > 5)) { 
+    direction = 'asc'
+  }
+  if (direction != 'holding') {
+    // console.warn("I am at pival "+pival +" ["+pindex+" -- "+direction+"]");
+    _.each(objects, function(obj, i){
+      // if (i % 8 == (pindex + 4)%8) {
+      //   console.log("HIT!! ["+i+"] "+obj.rdioData.artist+" -- "+obj.rdioData.name)
+      // } else {
+      //   console.log("\t ["+i+"] "+obj.rdioData.artist+" -- "+obj.rdioData.name)
+      // }
+    });
+  }
+  prev_index = pindex;
 }
 
 function playRdioTrack(data) {
@@ -77,9 +101,11 @@ function playRdioTrack(data) {
     index: index,
     initialPosition: position
   });
-  console.log("Trying to play something -- "+index+" of "+length+" (@ "+position+" of "+data.tracks[index].duration+")");
+  // console.log("Playing something by '" + data.artist, "' from '"+data.name+"'  -- "+index+" of "+length+" (@ "+position+" of "+data.tracks[index].duration+") ", data);
   now_playing_details = addText(data.tracks[index].name, "by " + data.artist, "from "+data.name);
 }
+
+// this should run faster
 function highlightLooking() {
   objects.forEach(function(x){
     if (intersectObj == x) {
@@ -110,7 +136,7 @@ function addText(line1, line2, line3){
   text3 = new THREE.Mesh( text3d3, textMaterial3 );
 
   text3.position.x = camera.position.x;
-  text3.position.y = camera.position.y - 200;
+  text3.position.y = camera.position.y - 300;
   text3.position.z = camera.position.z + text3.geometry.boundingBox.max.x/2;
 
   text3.rotation.x = -Math.PI/2;
@@ -125,7 +151,7 @@ function addText(line1, line2, line3){
   text3 = new THREE.Mesh( text3d3, textMaterial3 );
 
   text3.position.x = camera.position.x + 25;
-  text3.position.y = camera.position.y - 200;
+  text3.position.y = camera.position.y - 300;
   text3.position.z = camera.position.z + text3.geometry.boundingBox.max.x/2;
 
   text3.rotation.x = -Math.PI/2;
@@ -139,7 +165,7 @@ function addText(line1, line2, line3){
   text3 = new THREE.Mesh( text3d3, textMaterial3 );
 
   text3.position.x = camera.position.x + 50;
-  text3.position.y = camera.position.y - 200;
+  text3.position.y = camera.position.y - 300;
   text3.position.z = camera.position.z + text3.geometry.boundingBox.max.x/2;
 
   text3.rotation.x = -Math.PI/2;
@@ -166,8 +192,15 @@ R.ready(function(ready){
         document.getElementById('example').setAttribute("class", "");
       }
       track_progression = pos;
-      console.log("Position: "+pos+" \t\tVolume: "+volume)
-    })
+      // console.log("Position: "+pos+" \t\tVolume: "+volume)
+    });
+    R.player.on('change:playingTrack', function(track) {
+      if (track.get('key') == 't21529719') {
+        return;
+      }
+      now_playing_details = addText(track.get('name'), "by " + track.get('artist'), "from "+track.get('album'));
+      document.getElementById('example').setAttribute("class", "loading");
+    });
   } else {
     R.authenticate({mode: 'redirect'});
   }
@@ -186,7 +219,7 @@ function load_rdio_content(){
     method: 'getNewReleases',
     content: { 
       start: 0,
-      count: 12,
+      count: 8*4,
       time: 'thisweek',
       extras: ['tracks']
     },
@@ -194,15 +227,16 @@ function load_rdio_content(){
       console.log(data)
       for(var i = 0; i < data.result.length; ++i){
         j = i % 8
+        level = Math.floor(i/8.0)
         radian = ((Math.PI * 2.0) / 8) *  j;
-        z = LAYOUT_SCALE - Math.sin(radian) * LAYOUT_SCALE * 2;
-        x = LAYOUT_SCALE - Math.cos(radian) * LAYOUT_SCALE * 2;
-        y = -700 + LAYOUT_SCALE * Math.round(i/8);
+        z = LAYOUT_SCALE - Math.cos(radian) * LAYOUT_SCALE * 2;
+        x = LAYOUT_SCALE - Math.sin(radian) * LAYOUT_SCALE * 2;
+        y = -700 + LAYOUT_SCALE * level;
         c = create_rdio_block(x, y, z, scene, data.result[i].icon);
         c.rotation.y = radian;
         objects.push(c);
         c.rdioData = data.result[i];
-        console.log("Putting ["+i+"/"+j+"] at: "+ x+", "+y+", "+z+"("+c.position.z+") :: "+radian + "\t'"+ data.result[i].name+"'");
+        console.log("Putting ["+i+"/"+j+"] @ "+y+"("+level+") \t\t'"+ data.result[i].name+"' by '"+ data.result[i].artist+"'");
       }
       var xs = _.pluck(_.pluck(objects, 'position'), 'x');
       var zs = _.pluck(_.pluck(objects, 'position'), 'z');
@@ -213,7 +247,7 @@ function load_rdio_content(){
       console.log("Putting the camera at "+camera.position.x+", "+camera.position.y+", "+camera.position.z+" ")
 
       now_playing_block = create_rdio_block(camera.position.x,camera.position.y + 800,camera.position.z,scene, "http://rdio1img-a.akamaihd.net/playlist/5/3/6/00000000007f7635/2/square-200.jpg");
-      now_playing_details = addText("enjoy", "Rdio", "by Sithel");
+      now_playing_details = addText("enjoy", "Rdio", "by Rebecca");
     }
   });  
 }
